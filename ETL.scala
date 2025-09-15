@@ -69,5 +69,9 @@ val df = spark.read.format("jdbc")
 val kuduContext = new KuduContext(kudu_master_nodes, spark.sparkContext)
 val tableName = "bdl_raw_qa.serviceaccountpackageplanlookup"
 
+def loadDataToKudu(dataFrame: DataFrame, kuduContext: KuduContext, tableName: String): Unit = {
+  kuduContext.upsertRows(dataFrame, s"impala::$tableName")
+  println(s"Successfully loaded ${dataFrame.count()} rows to table: $tableName")
+}
 
-kuduContext.upsertRows(df, s"impala::$tableName")
+loadDataToKudu(df, kuduContext, tableName)
