@@ -66,8 +66,10 @@ val df = spark.read.format("jdbc")
   .option("driver", "oracle.jdbc.driver.OracleDriver")
   .load()
 
-val kuduContext = new KuduContext(kudu_master_nodes, spark.sparkContext)
+def loadToKudu(dataFrame: DataFrame, tableName: String, kuduMasterNodes: String): Unit = {
+  val kuduContext = new KuduContext(kuduMasterNodes, spark.sparkContext)
+  kuduContext.upsertRows(dataFrame, s"impala::$tableName")
+}
+
 val tableName = "bdl_raw_qa.serviceaccountpackageplanlookup"
-
-
-kuduContext.upsertRows(df, s"impala::$tableName")
+loadToKudu(df, tableName, kudu_master_nodes)
