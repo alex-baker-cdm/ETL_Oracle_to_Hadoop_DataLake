@@ -20,10 +20,12 @@ val source_user = "________"
 val source_pass = "________"
 val source_port = "_______"
 
-val crm_jdbc_url = "jdbc:oracle:thin:" + source_user + "/" + source_pass + "//@" + source_ip + ":" + source_port + "/" + source_system
 val kudu_master_nodes = "hddlm4.stc.com.bh:7051,hddlm5.stc.com.bh:7051,hddlm6.stc.com.bh:7051"
 
-val import_query = """(Select
+def extractFromOracle(sourceSystem: String, sourceIp: String, sourceUser: String, sourcePass: String, sourcePort: String): DataFrame = {
+  val crmJdbcUrl = "jdbc:oracle:thin:" + sourceUser + "/" + sourcePass + "//@" + sourceIp + ":" + sourcePort + "/" + sourceSystem
+  
+  val importQuery = """(Select
 ast.row_id as "assetid",
 ast.serv_acct_id AS "subscriberid",
 nvl(orgext.duns_num,ast.serial_num) as "msisdn",
@@ -58,13 +60,16 @@ Where
     and ast.last_upd >= sysdate - 4/24
 )"""
 
-val df = spark.read.format("jdbc")
-  .option("url", crm_jdbc_url)
-  .option("dbtable", import_query)
-  .option("user", source_user)
-  .option("password", source_pass)
-  .option("driver", "oracle.jdbc.driver.OracleDriver")
-  .load()
+  spark.read.format("jdbc")
+    .option("url", crmJdbcUrl)
+    .option("dbtable", importQuery)
+    .option("user", sourceUser)
+    .option("password", sourcePass)
+    .option("driver", "oracle.jdbc.driver.OracleDriver")
+    .load()
+}
+
+val df = extractFromOracle(source_system, source_ip, source_user, source_pass, source_port)
 
 val kuduContext = new KuduContext(kudu_master_nodes, spark.sparkContext)
 val tableName = "bdl_raw_qa.serviceaccountpackageplanlookup"
